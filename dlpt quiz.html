@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일어 정복 퀴즈</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a18;min-height:100vh;padding:1.5rem;}
+#app{max-width:680px;margin:0 auto;}
+h1{font-size:20px;font-weight:500;margin-bottom:1.25rem;}
+.tabs{display:flex;border-bottom:1px solid #e0dfd8;margin-bottom:1.25rem;}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:8px 18px;font-size:14px;color:#888780;cursor:pointer;margin-bottom:-1px;}
+.tab-btn.active{border-bottom-color:#1a1a18;color:#1a1a18;font-weight:500;}
+.tab-btn:hover:not(.active){color:#1a1a18;}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem;}
+.stat-card{background:#eceae3;border-radius:8px;padding:12px 16px;}
+.stat-label{font-size:12px;color:#888780;margin-bottom:4px;}
+.stat-val{font-size:22px;font-weight:500;}
+#question-card{background:#fff;border:1px solid #e0dfd8;border-radius:12px;padding:1.5rem 1.5rem 1.25rem;}
+.q-meta{font-size:12px;color:#aaa;margin-bottom:0.75rem;}
+.q-prompt{font-size:30px;font-weight:500;margin-bottom:0.5rem;line-height:1.3;}
+.q-hint{font-size:13px;color:#888780;margin-bottom:1.25rem;}
+.options{display:flex;flex-direction:column;gap:8px;margin-bottom:1.25rem;}
+.opt-btn{background:#f5f4f0;border:1px solid #e0dfd8;border-radius:8px;padding:12px 16px;text-align:left;font-size:15px;color:#1a1a18;cursor:pointer;display:flex;align-items:center;gap:10px;transition:border-color .15s,background .15s;width:100%;}
+.opt-btn:hover:not(:disabled){border-color:#b4b2a9;background:#eceae3;}
+.opt-btn.correct{border-color:#0F6E56;background:#E1F5EE;color:#085041;}
+.opt-btn.wrong{border-color:#993C1D;background:#FAECE7;color:#4A1B0C;}
+.opt-btn.reveal{border-color:#0F6E56;background:#E1F5EE;color:#085041;}
+.opt-letter{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:12px;font-weight:500;flex-shrink:0;background:#fff;border:1px solid #ccc;color:#888;}
+.opt-btn.correct .opt-letter,.opt-btn.reveal .opt-letter{background:#0F6E56;border-color:#0F6E56;color:#E1F5EE;}
+.opt-btn.wrong .opt-letter{background:#993C1D;border-color:#993C1D;color:#FAECE7;}
+#feedback-bar{font-size:14px;padding:10px 14px;border-radius:8px;margin-bottom:1rem;display:none;}
+#feedback-bar.show-correct{display:block;background:#E1F5EE;color:#085041;}
+#feedback-bar.show-wrong{display:block;background:#FAECE7;color:#4A1B0C;}
+.action-row{display:flex;gap:8px;}
+.btn-primary{background:#1a1a18;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;}
+.btn-primary:hover{opacity:.85;}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-ghost{background:transparent;border:1px solid #ccc;border-radius:8px;padding:10px 20px;font-size:14px;color:#888780;cursor:pointer;}
+.btn-ghost:hover{background:#eceae3;}
+.btn-danger{background:transparent;border:1px solid #ccc;border-radius:8px;padding:6px 12px;font-size:13px;color:#993C1D;cursor:pointer;}
+.btn-danger:hover{background:#FAECE7;}
+.progress-bar-wrap{height:4px;background:#eceae3;border-radius:2px;margin-bottom:1.25rem;overflow:hidden;}
+#progress-fill{height:100%;background:#1a1a18;transition:width .3s;border-radius:2px;}
+#results-card{background:#fff;border:1px solid #e0dfd8;border-radius:12px;padding:1.5rem;}
+.missed-item{border-top:1px solid #e0dfd8;padding:10px 0;}
+.missed-jp{font-size:18px;font-weight:500;}
+.missed-reading{font-size:14px;color:#0F6E56;margin-top:2px;}
+.missed-ans{font-size:14px;color:#888780;margin-top:1px;}
+textarea{width:100%;height:140px;font-size:13px;font-family:monospace;resize:vertical;background:#eceae3;border:1px solid #ccc;border-radius:8px;padding:12px;color:#1a1a18;}
+.add-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;}
+.add-row input{flex:1;min-width:100px;font-size:14px;padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:#eceae3;color:#1a1a18;}
+#vocab-search{width:100%;font-size:14px;padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:#eceae3;color:#1a1a18;margin-bottom:.75rem;}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:8px;background:#eceae3;color:#888780;border:1px solid #e0dfd8;}
+.vocab-table{width:100%;font-size:14px;border-collapse:collapse;margin-top:.75rem;}
+.vocab-table th{font-size:12px;color:#888780;font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid #e0dfd8;}
+.vocab-table td{padding:8px;border-bottom:1px solid #e0dfd8;vertical-align:middle;}
+.vocab-table tr:last-child td{border-bottom:none;}
+.mode-pills{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;}
+.mode-pill{background:#eceae3;border:1px solid #e0dfd8;border-radius:20px;padding:5px 14px;font-size:13px;color:#888780;cursor:pointer;}
+.mode-pill.on{background:#1a1a18;border-color:#1a1a18;color:#fff;}
+.info-box{font-size:13px;color:#888780;background:#eceae3;border-radius:8px;padding:12px 14px;margin-bottom:12px;line-height:1.7;}
+.info-box code{background:#fff;padding:1px 6px;border-radius:4px;font-size:12px;border:1px solid #ddd;}
+.sync-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#eceae3;border-radius:8px;margin-bottom:1rem;font-size:13px;flex-wrap:wrap;}
+.sync-status{font-size:12px;color:#888780;}
+.sync-status.ok{color:#0F6E56;}
+.sync-status.err{color:#993C1D;}
+.sync-status.loading{color:#888780;}
+input[type="text"].gist-input{width:100%;font-size:13px;padding:8px 12px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a18;margin-bottom:8px;font-family:monospace;}
+.section-title{font-size:13px;font-weight:500;color:#1a1a18;margin-bottom:6px;}
+</style>
+</head>
+<body>
+<div id="app">
+<h1>일어 정복 퀴즈 🇯🇵</h1>
+
+<!-- SYNC STATUS BAR -->
+<div class="sync-bar" id="sync-bar">
+  <span>☁️ 동기화:</span>
+  <span class="sync-status" id="sync-status">Gist 미설정</span>
+  <button class="btn-ghost" style="padding:4px 12px;font-size:12px;" onclick="switchTab('settings')">설정</button>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('import')" id="tab-import">Import</button>
+  <button class="tab-btn" onclick="switchTab('quiz')" id="tab-quiz">Quiz</button>
+  <button class="tab-btn" onclick="switchTab('vocab')" id="tab-vocab">Vocab <span id="vocab-badge" class="badge">0</span></button>
+  <button class="tab-btn" onclick="switchTab('results')" id="tab-results" style="display:none;">Results</button>
+  <button class="tab-btn" onclick="switchTab('settings')" id="tab-settings">⚙️</button>
+</div>
+
+<!-- SETTINGS TAB -->
+<div id="pane-settings" style="display:none;">
+  <div class="info-box">
+    <strong>GitHub Gist로 단어장 동기화</strong><br>
+    Gist에 단어장을 저장하면 노트북·폰·태블릿 어디서든 같은 데이터를 씁니다.<br><br>
+    <strong>1단계:</strong> <a href="https://gist.github.com" target="_blank">gist.github.com</a> 에서 새 Gist 만들기<br>
+    &nbsp;&nbsp;• 파일명: <code>vocab.txt</code> &nbsp;내용: 아무거나 입력 후 저장<br>
+    &nbsp;&nbsp;• <strong>Secret Gist</strong> 선택 (비공개)<br><br>
+    <strong>2단계:</strong> Gist URL에서 ID 복사<br>
+    &nbsp;&nbsp;예: <code>https://gist.github.com/shcreate6/<b>abc123def456</b></code><br><br>
+    <strong>3단계:</strong> GitHub Personal Access Token 발급<br>
+    &nbsp;&nbsp;• <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a><br>
+    &nbsp;&nbsp;• Note: <code>dlpt-quiz</code> &nbsp;권한: <code>gist</code> 체크만<br>
+    &nbsp;&nbsp;• Token은 한 번만 보이니 바로 복사
+  </div>
+
+  <div style="margin-bottom:1rem;">
+    <p class="section-title">Gist ID</p>
+    <input type="text" class="gist-input" id="input-gist-id" placeholder="abc123def456..." />
+    <p class="section-title">GitHub Token</p>
+    <input type="password" class="gist-input" id="input-token" placeholder="ghp_xxxxxxxxxxxx" />
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="saveSettings()">저장 &amp; 동기화</button>
+      <button class="btn-ghost" onclick="clearSettings()">설정 초기화</button>
+    </div>
+    <p id="settings-msg" style="font-size:13px;color:#888780;margin-top:8px;"></p>
+  </div>
+
+  <div class="info-box" style="margin-top:1rem;">
+    ⚠️ Token은 이 브라우저의 localStorage에만 저장됩니다. 다른 기기에서는 Token을 다시 입력해야 하지만 Gist ID는 같은 걸 쓰면 돼요.
+  </div>
+</div>
+
+<!-- IMPORT TAB -->
+<div id="pane-import">
+  <div class="info-box">
+    <strong>Quizlet export 형식:</strong><br>
+    <code>単語 [TAB] ひらがな / 뜻</code><br>
+    예: <code>嬉しい&nbsp;&nbsp;うれしい / 기쁘다</code><br>
+    기존 단어에 추가됩니다 (중복 제거). 저장 후 자동으로 Gist에 업로드.
+  </div>
+  <textarea id="vocab-input" placeholder="嬉しい&#9;うれしい / 기쁘다&#10;悲しい&#9;かなしい / 슬프다"></textarea>
+  <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+    <button class="btn-primary" onclick="importVocab(false)">단어 추가하기</button>
+    <button class="btn-ghost" onclick="importVocab(true)">기존 단어 교체하기</button>
+    <span id="import-msg" style="font-size:13px;color:#888780;"></span>
+  </div>
+</div>
+
+<!-- QUIZ TAB -->
+<div id="pane-quiz" style="display:none;">
+  <div id="quiz-empty" style="padding:2rem 0;text-align:center;color:#888780;font-size:14px;">단어를 먼저 Import 탭에서 불러오세요.</div>
+  <div id="quiz-content" style="display:none;">
+    <div style="margin-bottom:1rem;">
+      <p style="font-size:12px;color:#888780;margin-bottom:6px;">출제 모드 (복수 선택 가능)</p>
+      <div class="mode-pills">
+        <button class="mode-pill on" id="pill-kanji-reading" onclick="toggleMode('kanji-reading')">한자 → 히라가나</button>
+        <button class="mode-pill on" id="pill-kanji-meaning" onclick="toggleMode('kanji-meaning')">한자 → 뜻</button>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-label">Question</div><div class="stat-val" id="q-counter">1 / 20</div></div>
+      <div class="stat-card"><div class="stat-label">Correct</div><div class="stat-val" id="correct-count" style="color:#0F6E56;">0</div></div>
+      <div class="stat-card"><div class="stat-label">Vocab</div><div class="stat-val" id="total-vocab">0</div></div>
+    </div>
+    <div class="progress-bar-wrap"><div id="progress-fill" style="width:0%"></div></div>
+    <div id="question-card">
+      <p class="q-meta" id="q-type-label"></p>
+      <p class="q-prompt" id="q-prompt"></p>
+      <p class="q-hint" id="q-hint"></p>
+      <div id="mc-options" class="options"></div>
+      <div id="feedback-bar"></div>
+      <div class="action-row">
+        <button class="btn-primary" id="next-btn" onclick="nextQuestion()" style="display:none;">Next →</button>
+        <button class="btn-ghost" id="skip-btn" onclick="skipQuestion()">Skip</button>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <button class="btn-ghost" onclick="startSession()" style="font-size:13px;padding:7px 16px;">🔀 새 세션 시작</button>
+    </div>
+  </div>
+</div>
+
+<!-- VOCAB TAB -->
+<div id="pane-vocab" style="display:none;">
+  <div class="add-row">
+    <input id="add-jp" type="text" placeholder="한자 (嬉しい)" />
+    <input id="add-reading" type="text" placeholder="히라가나 (うれしい)" />
+    <input id="add-meaning" type="text" placeholder="뜻 (기쁘다)" />
+    <button class="btn-primary" onclick="addSingleWord()">추가</button>
+  </div>
+  <input id="vocab-search" type="text" placeholder="단어 검색..." oninput="renderVocabList()" />
+  <div style="max-height:400px;overflow-y:auto;">
+    <table class="vocab-table">
+      <thead><tr><th>#</th><th>한자</th><th>히라가나</th><th>뜻</th><th></th></tr></thead>
+      <tbody id="vocab-tbody"></tbody>
+    </table>
+  </div>
+  <p style="font-size:12px;color:#888780;margin-top:10px;" id="vocab-footer"></p>
+</div>
+
+<!-- RESULTS TAB -->
+<div id="pane-results" style="display:none;">
+  <div id="results-card">
+    <p style="font-size:20px;font-weight:500;margin-bottom:6px;" id="results-title"></p>
+    <p style="font-size:14px;color:#888780;margin-bottom:1.5rem;" id="results-sub"></p>
+    <div class="stat-row" style="margin-bottom:1.5rem;">
+      <div class="stat-card"><div class="stat-label">Score</div><div class="stat-val" id="res-score"></div></div>
+      <div class="stat-card"><div class="stat-label">Correct</div><div class="stat-val" id="res-correct" style="color:#0F6E56;"></div></div>
+      <div class="stat-card"><div class="stat-label">Missed</div><div class="stat-val" id="res-missed" style="color:#993C1D;"></div></div>
+    </div>
+    <div id="missed-list"></div>
+    <div style="display:flex;gap:8px;margin-top:1.5rem;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="restartQuiz()">New session (20 random)</button>
+      <button class="btn-ghost" onclick="reviewMissed()">틀린 단어만 복습</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+var allVocab=[], sessionQ=[], current=0, correct=0, missed=[], answered=false;
+var activeModes={'kanji-reading':true,'kanji-meaning':true};
+var GIST_ID='', TOKEN='';
+
+// ── INIT ──────────────────────────────────────────────
+window.onload=function(){
+  GIST_ID=localStorage.getItem('dlpt_gist_id')||'';
+  TOKEN=localStorage.getItem('dlpt_token')||'';
+  if(GIST_ID) document.getElementById('input-gist-id').value=GIST_ID;
+  if(TOKEN) document.getElementById('input-token').value=TOKEN;
+  if(GIST_ID && TOKEN){
+    setSyncStatus('loading','⏳ 단어장 불러오는 중...');
+    loadFromGist();
+  } else {
+    setSyncStatus('','Gist 미설정 — ⚙️ 설정 탭에서 연결하세요');
+  }
+};
+
+// ── TABS ──────────────────────────────────────────────
+function switchTab(name){
+  ['import','quiz','vocab','results','settings'].forEach(function(t){
+    var p=document.getElementById('pane-'+t);
+    if(p) p.style.display='none';
+    var tb=document.getElementById('tab-'+t);
+    if(tb) tb.classList.remove('active');
+  });
+  document.getElementById('pane-'+name).style.display='block';
+  var tb=document.getElementById('tab-'+name);
+  if(tb) tb.classList.add('active');
+  if(name==='vocab') renderVocabList();
+}
+
+// ── SETTINGS ──────────────────────────────────────────
+function saveSettings(){
+  GIST_ID=document.getElementById('input-gist-id').value.trim();
+  TOKEN=document.getElementById('input-token').value.trim();
+  if(!GIST_ID||!TOKEN){document.getElementById('settings-msg').textContent='⚠ Gist ID와 Token 모두 입력해 주세요.';return;}
+  localStorage.setItem('dlpt_gist_id',GIST_ID);
+  localStorage.setItem('dlpt_token',TOKEN);
+  document.getElementById('settings-msg').textContent='저장됨. 동기화 중...';
+  setSyncStatus('loading','⏳ 연결 중...');
+  loadFromGist();
+}
+
+function clearSettings(){
+  localStorage.removeItem('dlpt_gist_id');
+  localStorage.removeItem('dlpt_token');
+  GIST_ID=''; TOKEN='';
+  document.getElementById('input-gist-id').value='';
+  document.getElementById('input-token').value='';
+  document.getElementById('settings-msg').textContent='설정이 초기화됐어요.';
+  setSyncStatus('','Gist 미설정');
+}
+
+function setSyncStatus(cls, msg){
+  var el=document.getElementById('sync-status');
+  el.className='sync-status'+(cls?' '+cls:'');
+  el.textContent=msg;
+}
+
+// ── GIST API ──────────────────────────────────────────
+function gistHeaders(){
+  return{'Authorization':'token '+TOKEN,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'};
+}
+
+function loadFromGist(){
+  if(!GIST_ID||!TOKEN) return;
+  fetch('https://api.github.com/gists/'+GIST_ID,{headers:gistHeaders()})
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
+    .then(function(data){
+      var files=data.files;
+      var key=Object.keys(files)[0];
+      var content=files[key]?files[key].content:'';
+      if(content && content.trim()){
+        allVocab=JSON.parse(content);
+        updateBadge();
+        setSyncStatus('ok','✓ 동기화됨 ('+allVocab.length+'개)');
+        if(allVocab.length>=4) setTimeout(function(){switchTab('quiz');startSession();},200);
+      } else {
+        setSyncStatus('ok','✓ Gist 연결됨 (단어 없음 — Import에서 추가하세요)');
+      }
+    })
+    .catch(function(e){
+      setSyncStatus('err','⚠ 연결 실패: '+e.message);
+      document.getElementById('settings-msg').textContent='오류: '+e.message+' — Gist ID와 Token을 확인해 주세요.';
+    });
+}
+
+function saveToGist(){
+  if(!GIST_ID||!TOKEN){setSyncStatus('','Gist 미설정');return;}
+  setSyncStatus('loading','⏳ 저장 중...');
+  var body=JSON.stringify({files:{'vocab.txt':{content:JSON.stringify(allVocab)}}});
+  fetch('https://api.github.com/gists/'+GIST_ID,{method:'PATCH',headers:gistHeaders(),body:body})
+    .then(function(r){if(!r.ok) throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(){setSyncStatus('ok','✓ 동기화됨 ('+allVocab.length+'개)');})
+    .catch(function(e){setSyncStatus('err','⚠ 저장 실패: '+e.message);});
+}
+
+// ── VOCAB IMPORT ──────────────────────────────────────
+function importVocab(replace){
+  var raw=document.getElementById('vocab-input').value.trim();
+  if(!raw){document.getElementById('import-msg').textContent='텍스트를 붙여넣어 주세요.';return;}
+  var parsed=parseVocab(raw);
+  if(!parsed.length){document.getElementById('import-msg').textContent='⚠ 파싱 실패. 탭 구분자 형식인지 확인해 주세요.';return;}
+  if(replace){
+    allVocab=parsed;
+    document.getElementById('import-msg').textContent=parsed.length+'개 단어로 교체됨';
+  } else {
+    var existing=new Set(allVocab.map(function(v){return v.jp;}));
+    var added=0;
+    parsed.forEach(function(v){if(!existing.has(v.jp)){allVocab.push(v);added++;}});
+    document.getElementById('import-msg').textContent=added+'개 추가됨 (중복 '+(parsed.length-added)+'개 제외)';
+  }
+  updateBadge();
+  document.getElementById('vocab-input').value='';
+  saveToGist();
+  if(allVocab.length>=4) setTimeout(function(){switchTab('quiz');startSession();},300);
+}
+
+function parseVocab(raw){
+  var out=[];
+  raw.split('\n').filter(function(l){return l.trim();}).forEach(function(line){
+    var parts=line.split('\t');
+    if(parts.length>=2){
+      var jp=parts[0].trim(), rest=parts[1].trim();
+      var reading='', meaning='';
+      var slashIdx=rest.indexOf('/');
+      if(slashIdx>-1){reading=rest.substring(0,slashIdx).trim();meaning=rest.substring(slashIdx+1).trim();}
+      else if(/^[\u3040-\u30FF\s]+$/.test(rest)){reading=rest;}
+      else{meaning=rest;}
+      out.push({jp:jp,reading:reading,meaning:meaning});
+    }
+  });
+  return out;
+}
+
+function addSingleWord(){
+  var jp=document.getElementById('add-jp').value.trim();
+  var reading=document.getElementById('add-reading').value.trim();
+  var meaning=document.getElementById('add-meaning').value.trim();
+  if(!jp) return;
+  if(allVocab.some(function(v){return v.jp===jp;})){alert('이미 있는 단어예요: '+jp);return;}
+  allVocab.push({jp:jp,reading:reading,meaning:meaning});
+  document.getElementById('add-jp').value='';
+  document.getElementById('add-reading').value='';
+  document.getElementById('add-meaning').value='';
+  updateBadge(); renderVocabList(); saveToGist();
+}
+
+function deleteWord(idx){
+  allVocab.splice(idx,1);
+  updateBadge(); renderVocabList(); saveToGist();
+}
+
+function updateBadge(){
+  document.getElementById('vocab-badge').textContent=allVocab.length;
+  document.getElementById('total-vocab').textContent=allVocab.length;
+  if(allVocab.length>=4){
+    document.getElementById('quiz-empty').style.display='none';
+    document.getElementById('quiz-content').style.display='block';
+  }
+}
+
+function renderVocabList(){
+  var q=(document.getElementById('vocab-search').value||'').toLowerCase();
+  var filtered=[];
+  allVocab.forEach(function(v,i){
+    if(!q||v.jp.toLowerCase().includes(q)||v.reading.toLowerCase().includes(q)||v.meaning.toLowerCase().includes(q))
+      filtered.push({item:v,idx:i});
+  });
+  var tb=document.getElementById('vocab-tbody');
+  tb.innerHTML='';
+  filtered.forEach(function(f){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td style="color:#aaa;font-size:12px;">'+(f.idx+1)+'</td>'
+      +'<td style="font-size:16px;font-weight:500;">'+esc(f.item.jp)+'</td>'
+      +'<td style="color:#0F6E56;font-size:15px;">'+esc(f.item.reading)+'</td>'
+      +'<td style="color:#888780;">'+esc(f.item.meaning)+'</td>'
+      +'<td><button class="btn-danger" onclick="deleteWord('+f.idx+')">🗑</button></td>';
+    tb.appendChild(tr);
+  });
+  document.getElementById('vocab-footer').textContent=filtered.length+'개 표시 중 / 전체 '+allVocab.length+'개';
+}
+
+// ── QUIZ ──────────────────────────────────────────────
+function toggleMode(mode){
+  var otherOn=Object.keys(activeModes).filter(function(m){return m!==mode&&activeModes[m];}).length>0;
+  if(activeModes[mode]&&!otherOn) return;
+  activeModes[mode]=!activeModes[mode];
+  document.getElementById('pill-'+mode).classList.toggle('on',activeModes[mode]);
+}
+
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function startSession(pool){
+  switchTab('quiz');
+  var src=pool||allVocab;
+  if(src.length<4) return;
+  var eligible=src.filter(function(v){
+    if(activeModes['kanji-reading']&&v.reading) return true;
+    if(activeModes['kanji-meaning']&&v.meaning) return true;
+    return false;
+  });
+  if(eligible.length<4){alert('선택한 모드에 맞는 단어가 4개 이상 필요해요.');return;}
+  sessionQ=shuffle(eligible).slice(0,Math.min(20,eligible.length)).map(function(item){
+    var modes=[];
+    if(activeModes['kanji-reading']&&item.reading) modes.push('kanji-reading');
+    if(activeModes['kanji-meaning']&&item.meaning) modes.push('kanji-meaning');
+    return{item:item,mode:modes[Math.floor(Math.random()*modes.length)]};
+  });
+  current=0; correct=0; missed=[];
+  document.getElementById('tab-results').style.display='none';
+  showQuestion();
+}
+
+function showQuestion(){
+  answered=false;
+  var q=sessionQ[current];
+  var isReading=(q.mode==='kanji-reading');
+  document.getElementById('q-type-label').textContent=isReading?'한자 → 히라가나':'한자 → 뜻';
+  document.getElementById('q-prompt').textContent=q.item.jp;
+  document.getElementById('q-hint').textContent=isReading?'히라가나로 읽는 법을 고르세요':'뜻을 고르세요';
+  document.getElementById('feedback-bar').className='';
+  document.getElementById('feedback-bar').textContent='';
+  document.getElementById('next-btn').style.display='none';
+  document.getElementById('skip-btn').style.display='';
+  var field=isReading?'reading':'meaning';
+  var opts=buildOpts(q.item,field);
+  var mcEl=document.getElementById('mc-options');
+  mcEl.innerHTML='';
+  opts.forEach(function(opt,i){
+    var btn=document.createElement('button');
+    btn.className='opt-btn';
+    btn.innerHTML='<span class="opt-letter">'+'ABCD'[i]+'</span>'+esc(opt.val);
+    btn.onclick=(function(o,b,os){return function(){if(!answered)checkMC(o.correct,b,os,field,q.item);};})(opt,btn,opts);
+    mcEl.appendChild(btn);
+  });
+  document.getElementById('q-counter').textContent=(current+1)+' / '+sessionQ.length;
+  document.getElementById('correct-count').textContent=correct;
+  document.getElementById('progress-fill').style.width=Math.round((current/sessionQ.length)*100)+'%';
+}
+
+function buildOpts(item,field){
+  var c={val:item[field],correct:true};
+  var pool=allVocab.filter(function(v){return v[field]&&v[field]!==item[field];});
+  var d=shuffle(pool).slice(0,3).map(function(v){return{val:v[field],correct:false};});
+  while(d.length<3) d.push({val:'—',correct:false});
+  return shuffle([c].concat(d));
+}
+
+function checkMC(isCorrect,btn,opts,field,item){
+  answered=true;
+  document.querySelectorAll('.opt-btn').forEach(function(b,i){b.disabled=true;if(opts[i].correct)b.className='opt-btn reveal';});
+  if(isCorrect){btn.className='opt-btn correct';correct++;showFeedback(true,null,item);}
+  else{btn.className='opt-btn wrong';missed.push(sessionQ[current].item);showFeedback(false,item[field],item);}
+  document.getElementById('correct-count').textContent=correct;
+  document.getElementById('next-btn').style.display='';
+  document.getElementById('skip-btn').style.display='none';
+}
+
+function showFeedback(ok,ans,item){
+  var bar=document.getElementById('feedback-bar');
+  if(ok){
+    var extra=(item.reading&&item.meaning)?' ('+item.reading+' / '+item.meaning+')':'';
+    bar.textContent='✓ Correct!'+extra;
+    bar.className='show-correct';
+  } else {
+    bar.textContent='✗ Incorrect — 정답: '+ans;
+    bar.className='show-wrong';
+  }
+}
+
+function nextQuestion(){current++;if(current>=sessionQ.length){showResults();return;}showQuestion();}
+function skipQuestion(){missed.push(sessionQ[current].item);current++;if(current>=sessionQ.length){showResults();return;}showQuestion();}
+
+function showResults(){
+  document.getElementById('tab-results').style.display='';
+  switchTab('results');
+  var total=sessionQ.length,pct=Math.round((correct/total)*100);
+  document.getElementById('results-title').textContent=pct>=80?'🎉 잘 했어요!':pct>=60?'조금 더 힘내요!':'복습이 필요해요 💪';
+  document.getElementById('results-sub').textContent='DLPT prep session complete';
+  document.getElementById('res-score').textContent=pct+'%';
+  document.getElementById('res-correct').textContent=correct+' / '+total;
+  document.getElementById('res-missed').textContent=missed.length;
+  var list=document.getElementById('missed-list');
+  list.innerHTML='';
+  if(missed.length){
+    var hdr=document.createElement('p');
+    hdr.style.cssText='font-size:13px;font-weight:500;color:#888780;margin-bottom:4px;';
+    hdr.textContent='Missed / skipped:';list.appendChild(hdr);
+    missed.forEach(function(item){
+      var d=document.createElement('div');d.className='missed-item';
+      d.innerHTML='<p class="missed-jp">'+esc(item.jp)+'</p>'
+        +(item.reading?'<p class="missed-reading">'+esc(item.reading)+'</p>':'')
+        +(item.meaning?'<p class="missed-ans">'+esc(item.meaning)+'</p>':'');
+      list.appendChild(d);
+    });
+  }
+}
+
+function restartQuiz(){startSession();}
+function reviewMissed(){if(!missed.length){restartQuiz();return;}startSession(missed.slice());}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
